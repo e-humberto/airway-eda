@@ -1,0 +1,21 @@
+# Arquivos do RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Arquivos de output
+*.pdf
+*.html
+!reports/*.html
+*.png
+!figures/*.png
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Dados grandes (caso venham a ser baixados)
+data/*.fastq
+data/*.bam
+data/*.sam
