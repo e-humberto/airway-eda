@@ -109,3 +109,82 @@ airway_filtrado <- airway[genes_a_manter, ]
 # Confere dimensões antes/depois
 dim(airway)
 dim(airway_filtrado)
+
+
+# ==============================================================================
+# Bloco 3: Transformação dos dados (VST)
+# ==============================================================================
+
+# Pacote DESeq2 para a transformação VSI
+library(DESeq2)
+
+# --- Cria objeto DESeqDataSet a partir do airway filtrado ---------------------
+
+# Precisamos especificar o "design", ou seja, quais variáveis o modelo vai considerar.
+# Por enquanto, ~1 (sem covariáveis). Vamos só transformar, não testar.
+dds <- DESeqDataSet(airway_filtrado, design = ~ 1)
+
+# Inspeciona
+dds
+
+# --- Aplica VST ---------------------------------------------------------------
+
+# blind = TRUE: transformação independente do design experimental
+# (apropriada para EDA, onde não queremos viés do "grupo conhecido")
+vsd <- vst(dds, blind = TRUE)
+
+# Inspeciona
+vsd
+
+
+# --- Compara distribuições: antes vs depois -----------------------------------
+
+# Extrai matriz transformada
+contagens_vst <- assay(vsd)
+
+# Resumo estatístico das primeiras 4 amostras (compare com bloco 1)
+summary(contagens_vst[, 1:4])
+
+
+# --- Visualização: log2 vs VST ------------------------------------------------
+
+# Já temos contagens_log do Bloco 1.
+# Vamos fazer dois boxplots lado a lado para comparar
+
+# Prepara dados em formato long - LOG2 (filtrado para os mesmos genes do VST)
+log_long <- contagens_log[genes_a_manter, ] |>
+  as.data.frame() |>
+  rownames_to_column("gene_id") |>
+  pivot_longer(
+    cols = -gene_id,
+    names_to = "amostra",
+    values_to = "valor"
+  ) |>
+  mutate(transformacao = "log2(count + 1)")
+
+# Prepara dados em formato long - VST
+vst_long <- contagens_vst |>
+  as.data.frame() |>
+  rownames_to_column("gene_id") |>
+  pivot_longer(
+    cols = -gene_id,
+    names_to = "amostra",
+    values_to = "valor"
+  ) |>
+  mutate(transformacao = "VST")
+
+# Combina os dois
+comparacao <- bind_rows(log_long, vst_long)
+
+# Boxplot comparativo dos dois painéis
+ggplot(comparacao, aes(x = amostra, y = valor)) +
+  geom_boxplot(fill = "steelblue", alpha = 0.7) +
+  facet_wrap(~ transformacao, scales = "free_y") +
+  labs(
+    title = "Comparação: log2 simples vs VST",
+    subtitle = "Após filtragem - 16.139 genes",
+    x = "Amostra",
+    y = "Valor transformado"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
