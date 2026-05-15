@@ -188,3 +188,54 @@ ggplot(comparacao, aes(x = amostra, y = valor)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ==============================================================================
+# Bloco 4: PCA (Principal Component Analysis)
+# ==============================================================================
+
+# --- PCA usando a função do DESeq2 --------------------------------------------
+
+# DESeq2 tem função plotPCA() conveniente.
+# Argumentos importantes:
+#   ingroup: variável(is) do colData para colotrir os pontos
+#   ntop: quantos genes mais variáveis usar (padrão = 500)
+#   returnData: TRUE retorna a tabela (para customizar plot)
+
+# PCA colorindo por tratamento (dex)
+plotPCA(vsd, intgroup = "dex")
+
+# PCA colorindo por linhagem celular (cell)
+plotPCA(vsd, intgroup = "cell")
+
+# PCa combinando ambos (tratamento + linhagem)
+plotPCA(vsd, intgroup = c("dex", "cell"))
+
+
+# --- PCA customizado: extrai os dados e plota com ggplot2 ---------------------
+
+# Extrai os dados do PCA - permite customização total
+pca_data <- plotPCA(vsd, intgroup = c("dex", "cell"), returnData = TRUE)
+
+# Inspeciona estrutura
+head(pca_data)
+
+# Extrai percentual de variância explicada
+percent_var <- round(100 * attr(pca_data, "percentVar"))
+percent_var
+
+
+# --- Plot customizado: tratamento na cor, doador na forma ---------------------
+
+ggplot(pca_data, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
+  geom_point(size = 4, alpha = 0.8) +
+  labs(
+    title = "PCA - Dataset airway",
+    subtitle = "Top 500 mais variáveis (VST)",
+    x = paste0("PC1: ", percent_var[1], "% variância"),
+    y = paste0("PC2: ", percent_var[2], "% variância"),
+    color = "Tratamento",
+    shape = "Linhagem"
+  ) +
+  scale_color_manual(values = c("untrt" = "steelblue", "trt" = "tomato")) +
+  theme_minimal() +
+  theme(legend.position = "right")
