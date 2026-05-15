@@ -239,3 +239,63 @@ ggplot(pca_data, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
   scale_color_manual(values = c("untrt" = "steelblue", "trt" = "tomato")) +
   theme_minimal() +
   theme(legend.position = "right")
+
+# ==============================================================================
+# Bloco 5: Clustering hierárquico com heatmap
+# ==============================================================================
+
+# Pacote pheatmap para heatmaps com clustering
+library(pheatmap)
+
+
+# --- Seleciona os 50 genes mais variáveis -------------------------------------
+
+# Calcula variância de cada gene (linha) através das 8 amostras
+var_genes <- rowVars(contagens_vst)
+
+# Orgena por variâcnia decrescente e pega os 50 mais variáveis
+top50_idx <- order(var_genes, decreasing = TRUE)[1:50]
+
+# Cria matriz com apenas esses 50 genes
+mat_top50 <- contagens_vst[top50_idx, ]
+
+# Confere dimensão
+dim(mat_top50)
+
+
+# --- Aplica z-score por gene (linha) ------------------------------------------
+
+# Centraliza cada gene em sua média e escala eplo desvio-padrão
+# t() transpõe a matriz porque scale() opera em colunas
+mat_top50_z <- t(scale(t(mat_top50)))
+
+# Confere o resultado: média ~0 e SD ~1 por gene (linha)
+summary(mat_top50_z[1, ]) # primeiro gene
+summary(mat_top50_z[2, ]) # segundo gene
+
+
+# --- Prepara anotações para as colunas ----------------------------------------
+
+# Cria data.frame com metadados das amostras
+anotacao_amostras <- data.frame(
+  Tratamento = colData(vsd)$dex,
+  Linhagem = colData(vsd)$cell,
+  row.names = colnames(mat_top50_z)
+)
+
+# Inspeciona
+anotacao_amostras
+
+
+# --- Heatmap com clustering hierárquico ---------------------------------------
+
+pheatmap(
+  mat_top50_z,
+  annotation_col = anotacao_amostras,
+  show_rownames = FALSE, # 50 nomes de genes poluiria o gráfico
+  show_colnames = TRUE,
+  cluster_rows = TRUE, # agrupa genes (linhas)
+  cluster_cols = TRUE, # agrupa amostras (colunas)
+  main = "Heatmap: 50 genes mais variáveis (z-socre)",
+  fontsize = 9
+)
